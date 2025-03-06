@@ -17,14 +17,15 @@
             background-color: white;
             border-radius: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
         .text {
             font-family: "Arial", sans-serif;
             font-size: 20px;
             color: #8B4513; /* 深棕色 */
             font-weight: bold;
-            margin-top: 10px;
-            opacity: 0;
+            position: absolute;
+            top: 65%; /* 向上移动 */
             transition: opacity 0.5s ease-in-out;
         }
     </style>
@@ -47,12 +48,22 @@
         let earWiggle = 0; // 耳朵摆动动画
         let noseScale = 1; // 鼻子呼吸效果
         let eyeBlink = 1;  // 眼睛睁开状态（1=睁开，0=闭眼）
-        let textVisible = false; // 文字是否可见
-        let loopTimer = null; // 用于循环的定时器
+        let floatOffset = 0; // 上下浮动动画
+        let floatDirection = 1; // 控制浮动方向
+        let textBlink = 1; // 文字闪烁控制
 
         function drawPig() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
+            // **计算整体漂浮动画**
+            floatOffset += floatDirection * 0.3;
+            if (floatOffset > 5 || floatOffset < -5) {
+                floatDirection *= -1;
+            }
+
+            ctx.save();
+            ctx.translate(0, floatOffset); // 让整个猪头上下浮动
+
             // **绘制头部**
             if (progress >= 0.1) {
                 ctx.beginPath();
@@ -115,6 +126,8 @@
                 ctx.fill();
             }
 
+            ctx.restore(); // 结束漂浮动画
+
             // **动画逻辑**
             progress += 0.02;
             earWiggle += 0.1;  // 耳朵轻微晃动
@@ -124,49 +137,32 @@
             if (progress <= 1) {
                 requestAnimationFrame(drawPig);
             } else {
-                showText();
+                animateText(); // 文字闪烁
             }
         }
 
-        // **文字动画**
-        function showText() {
+        // **文字闪烁动画**
+        function animateText() {
             const textElem = document.getElementById("text");
-            let index = 0;
-            const text = "雪雪包天天开心";
-            textElem.textContent = "";
-            textElem.style.opacity = "1";
-            
-            function revealText() {
-                if (index < text.length) {
-                    textElem.textContent += text[index];
-                    index++;
-                    setTimeout(revealText, 200); // 逐字显示
-                } else {
-                    setTimeout(() => {
-                        textElem.style.opacity = "0"; // 文字消失
-                        restartAnimation(); // 重新开始动画
-                    }, 2000);
-                }
-            }
-            revealText();
+            setInterval(() => {
+                textBlink = textBlink === 1 ? 0.2 : 1; // 文字亮度变化
+                textElem.style.opacity = textBlink;
+            }, 500); // 500ms 切换一次
         }
 
         // **动画循环**
         function restartAnimation() {
-            clearTimeout(loopTimer);
             progress = 0;
             earWiggle = 0;
             noseScale = 1;
             eyeBlink = 1;
-            document.getElementById("text").textContent = ""; // 清空文字
+            floatOffset = 0;
             drawPig();
         }
 
         function startLoop() {
             drawPig();
-            loopTimer = setInterval(() => {
-                restartAnimation();
-            }, 8000); // 8秒后重新开始
+            setInterval(restartAnimation, 8000); // 8秒后重新开始
         }
 
         startLoop();
