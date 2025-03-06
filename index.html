@@ -1,43 +1,253 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>可爱猪头</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #ffe4e1;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>逐步绘制小猪头动画</title>
+  <style>
+    body { margin: 0; padding: 0; background: #fff; text-align: center; }
+    canvas { background: #fff; display: block; margin: 0 auto; }
+  </style>
 </head>
 <body>
-    <svg width="300" height="300">
-        <!-- 猪头 -->
-        <ellipse cx="150" cy="150" rx="80" ry="70" fill="pink" stroke="black" stroke-width="3"/>
-        
-        <!-- 耳朵 (左) -->
-        <polygon points="90,100 60,60 100,80" fill="pink" stroke="black" stroke-width="3"/>
-        
-        <!-- 耳朵 (右) -->
-        <polygon points="210,100 240,60 200,80" fill="pink" stroke="black" stroke-width="3"/>
-        
-        <!-- 鼻子 -->
-        <ellipse cx="150" cy="170" rx="40" ry="25" fill="hotpink" stroke="black" stroke-width="3"/>
-        
-        <!-- 鼻孔 -->
-        <circle cx="140" cy="170" r="5" fill="black"/>
-        <circle cx="160" cy="170" r="5" fill="black"/>
-        
-        <!-- 眼睛 -->
-        <circle cx="130" cy="130" r="10" fill="black"/>
-        <circle cx="170" cy="130" r="10" fill="black"/>
-        
-        <!-- 嘴巴 -->
-        <path d="M130,190 Q150,210 170,190" stroke="black" stroke-width="3" fill="none"/>
-    </svg>
+  <!-- Canvas 画布用于绘制动画 -->
+  <canvas id="pigCanvas" width="300" height="300">您的浏览器不支持 Canvas</canvas>
+
+  <script>
+    // 获取 Canvas 元素和绘图上下文
+    const canvas = document.getElementById('pigCanvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // 将坐标原点移到 Canvas 中心，方便以中心为基准绘制
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.translate(cx, cy);
+
+    // 绘制样式设置
+    ctx.strokeStyle = "#000";    // 使用黑色描边
+    ctx.lineWidth = 2;           // 线条宽度
+    ctx.lineCap = "round";       // 线条端点为圆滑效果
+
+    // 定义小猪各部位的参数
+    const headRadius = 80;       // 猪头半径
+    // 耳朵三个关键点坐标（相对于中心坐标系）
+    const leftEar = {
+      p1: {x: -50, y: -70},      // 左耳基部左侧点
+      p2: {x: -60, y: -110},     // 左耳尖端
+      p3: {x: -20, y: -80}       // 左耳基部右侧点
+    };
+    const rightEar = {
+      p1: {x: 20,  y: -80},      // 右耳基部左侧点
+      p2: {x: 60,  y: -110},     // 右耳尖端
+      p3: {x: 50,  y: -70}       // 右耳基部右侧点
+    };
+    // 眼睛参数
+    const eyeRadius = 8;         // 眼睛（黑色小圆点）半径
+    const leftEyeCenter = {x: -30, y: -20};
+    const rightEyeCenter = {x: 30, y: -20};
+    // 鼻子（猪鼻）参数：椭圆形
+    const noseCenter = {x: 0, y: 20};
+    const noseRadiusX = 30;      // 鼻子椭圆半径X方向
+    const noseRadiusY = 20;      // 鼻子椭圆半径Y方向
+    // 鼻孔参数
+    const nostrilRadius = 4;
+    const leftNostrilCenter = {x: -10, y: 20};
+    const rightNostrilCenter = {x: 10, y: 20};
+    // 嘴巴参数（微笑弧线）
+    const mouthRadius = 20;
+    const mouthCenter = {x: 0, y: 40};
+
+    // 动画时间设置（毫秒）
+    const totalDuration = 5000;   // 总动画时间5秒
+    // 各部分动画分段时间占比（这里使用百分比方便计算）
+    const headEnd = 0.2;   // 头部结束时间占比（0.0 - 0.2）
+    const earsEnd = 0.4;   // 耳朵结束（0.2 - 0.4）
+    const eyesEnd = 0.6;   // 眼睛结束（0.4 - 0.6）
+    const noseEnd = 0.8;   // 鼻子结束（0.6 - 0.8）
+    const mouthEnd = 1.0;  // 嘴巴结束（0.8 - 1.0）
+
+    let startTime = null;
+    function drawFrame(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      // 计算当前进度比例 t (0 ~ 1)
+      let t = elapsed / totalDuration;
+      if (t > 1) t = 1;
+
+      // 每帧开始清空画布
+      ctx.clearRect(-cx, -cy, w, h);
+
+      // ** 绘制头部 **
+      if (t > 0) {
+        // 计算头部绘制进度
+        let headProgress;
+        if (t < headEnd) {
+          headProgress = t / headEnd;  // 0 ~ 1
+        } else {
+          headProgress = 1;            // 完成
+        }
+        // 绘制头部轮廓（圆形）逐渐从0角度画到360度 * headProgress
+        ctx.beginPath();
+        // 从 -90 度开始绘制（即头顶正上方作为起点），顺时针方向
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + headProgress * 2 * Math.PI;
+        ctx.arc(0, 0, headRadius, startAngle, endAngle, false);
+        ctx.stroke();
+      }
+
+      // ** 绘制左耳 **
+      if (t >= headEnd) {
+        // 耳朵阶段的整体进度（0表示耳朵尚未开始，1表示耳朵阶段结束）
+        let earsProgress;
+        if (t < earsEnd) {
+          earsProgress = (t - headEnd) / (earsEnd - headEnd);
+        } else {
+          earsProgress = 1;
+        }
+        // 左耳进度（耳朵阶段前半部分用于左耳）
+        let leftEarProgress = Math.min(earsProgress * 2, 1);  // 前一半时间绘制左耳，超过1则表示左耳完成
+        // 计算左耳绘制到的当前点并画线
+        ctx.beginPath();
+        ctx.moveTo(leftEar.p1.x, leftEar.p1.y);
+        if (leftEarProgress < 1) {
+          if (leftEarProgress < 0.5) {
+            // 前50%时间：P1 -> P2 段
+            let segProg = leftEarProgress / 0.5;  // 0 ~ 1
+            const currX = leftEar.p1.x + (leftEar.p2.x - leftEar.p1.x) * segProg;
+            const currY = leftEar.p1.y + (leftEar.p2.y - leftEar.p1.y) * segProg;
+            ctx.lineTo(currX, currY);
+          } else {
+            // 50%及以后：先画完整 P1->P2，再画 P2->P3 的部分
+            ctx.lineTo(leftEar.p2.x, leftEar.p2.y);
+            let segProg = (leftEarProgress - 0.5) / 0.5;  // 0 ~ 1
+            const currX = leftEar.p2.x + (leftEar.p3.x - leftEar.p2.x) * segProg;
+            const currY = leftEar.p2.y + (leftEar.p3.y - leftEar.p2.y) * segProg;
+            ctx.lineTo(currX, currY);
+          }
+        } else {
+          // leftEarProgress == 1 表示左耳完成，绘制完整耳朵轮廓
+          ctx.lineTo(leftEar.p2.x, leftEar.p2.y);
+          ctx.lineTo(leftEar.p3.x, leftEar.p3.y);
+        }
+        ctx.stroke();
+      }
+
+      // ** 绘制右耳 **
+      if (t >= headEnd) {
+        // 右耳进度（耳朵阶段后一半用于右耳）
+        let earsProgress = t < earsEnd ? (t - headEnd) / (earsEnd - headEnd) : 1;
+        let rightEarProgress = Math.max(0, (earsProgress - 0.5) * 2);  // 后一半时间用于右耳
+        if (rightEarProgress > 0) {
+          ctx.beginPath();
+          ctx.moveTo(rightEar.p1.x, rightEar.p1.y);
+          if (rightEarProgress < 1) {
+            if (rightEarProgress < 0.5) {
+              // 绘制右耳前半段：P1 -> P2
+              let segProg = rightEarProgress / 0.5;
+              const currX = rightEar.p1.x + (rightEar.p2.x - rightEar.p1.x) * segProg;
+              const currY = rightEar.p1.y + (rightEar.p2.y - rightEar.p1.y) * segProg;
+              ctx.lineTo(currX, currY);
+            } else {
+              // 绘制右耳后半段：先完整 P1->P2，再部分 P2->P3
+              ctx.lineTo(rightEar.p2.x, rightEar.p2.y);
+              let segProg = (rightEarProgress - 0.5) / 0.5;
+              const currX = rightEar.p2.x + (rightEar.p3.x - rightEar.p2.x) * segProg;
+              const currY = rightEar.p2.y + (rightEar.p3.y - rightEar.p2.y) * segProg;
+              ctx.lineTo(currX, currY);
+            }
+          } else {
+            // 右耳绘制完成
+            ctx.lineTo(rightEar.p2.x, rightEar.p2.y);
+            ctx.lineTo(rightEar.p3.x, rightEar.p3.y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // ** 绘制眼睛 **
+      if (t >= eyesEnd - (eyesEnd - 0.4)) {  // 即 t >= 0.4，眼睛部分开始
+        // 眼睛阶段进度
+        let eyesProgress = t < eyesEnd ? (t - (eyesEnd - 0.2)) / (eyesEnd - (eyesEnd - 0.2)) : 1;
+        // 左眼进度（先绘制左眼，再绘制右眼）
+        let leftEyeProgress = Math.min(eyesProgress * 2, 1);
+        if (leftEyeProgress > 0) {
+          // 绘制左眼（黑色小圆点）逐渐增大
+          ctx.beginPath();
+          const currRadius = eyeRadius * leftEyeProgress;
+          ctx.fillStyle = "#000";
+          ctx.arc(leftEyeCenter.x, leftEyeCenter.y, currRadius, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        // 右眼进度
+        let rightEyeProgress = Math.max(0, (eyesProgress - 0.5) * 2);
+        if (rightEyeProgress > 0) {
+          ctx.beginPath();
+          const currRadius2 = eyeRadius * rightEyeProgress;
+          ctx.arc(rightEyeCenter.x, rightEyeCenter.y, currRadius2, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+
+      // ** 绘制鼻子（猪鼻）**
+      if (t >= noseEnd - (noseEnd - eyesEnd)) {  // t >= 0.6，鼻子部分开始
+        let noseProgress = t < noseEnd ? (t - eyesEnd) / (noseEnd - eyesEnd) : 1;
+        // 绘制鼻子轮廓（椭圆）逐步描绘
+        ctx.beginPath();
+        if (noseProgress < 1) {
+          // 部分椭圆弧
+          const endAngle = noseProgress * 2 * Math.PI;
+          ctx.ellipse(noseCenter.x, noseCenter.y, noseRadiusX, noseRadiusY, 0, 0, endAngle, false);
+        } else {
+          // 完整鼻子
+          ctx.ellipse(noseCenter.x, noseCenter.y, noseRadiusX, noseRadiusY, 0, 0, 2 * Math.PI, false);
+        }
+        ctx.stroke();
+        // 绘制鼻孔（逐步出现）
+        if (noseProgress === 1) {
+          // 鼻孔阶段进度（将鼻子阶段后一半时间用于两个鼻孔出现）
+          let nostrilsProgress = t < noseEnd ? (t - (noseEnd - 0.1)) / ((noseEnd) - (noseEnd - 0.1)) : 1;
+          // 左鼻孔
+          let leftNostrilProg = Math.min(nostrilsProgress * 2, 1);
+          if (leftNostrilProg > 0) {
+            ctx.beginPath();
+            ctx.fillStyle = "#000";
+            const r1 = nostrilRadius * leftNostrilProg;
+            ctx.arc(leftNostrilCenter.x, leftNostrilCenter.y, r1, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+          // 右鼻孔
+          let rightNostrilProg = Math.max(0, (nostrilsProgress - 0.5) * 2);
+          if (rightNostrilProg > 0) {
+            ctx.beginPath();
+            const r2 = nostrilRadius * rightNostrilProg;
+            ctx.arc(rightNostrilCenter.x, rightNostrilCenter.y, r2, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+
+      // ** 绘制嘴巴 **
+      if (t >= mouthEnd - (mouthEnd - noseEnd)) {  // t >= 0.8，嘴巴部分开始
+        let mouthProgress = t < mouthEnd ? (t - noseEnd) / (mouthEnd - noseEnd) : 1;
+        // 嘴巴是一个向上的弧线（微笑），我们绘制半圆弧的下半部分
+        ctx.beginPath();
+        // 下半圆弧从左到右逐步绘制
+        const mouthStartAngle = Math.PI;  // 180度（左边）
+        const mouthEndAngle = mouthStartAngle + mouthProgress * Math.PI;  // 从左往右绘制
+        ctx.arc(mouthCenter.x, mouthCenter.y, mouthRadius, mouthStartAngle, mouthEndAngle, false);
+        ctx.stroke();
+      }
+
+      // 动画循环控制：如果未完成则继续下一帧
+      if (t < 1) {
+        requestAnimationFrame(drawFrame);
+      }
+    }
+
+    // 启动动画
+    requestAnimationFrame(drawFrame);
+  </script>
 </body>
 </html>
