@@ -1,244 +1,244 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>Animated Pig Drawing</title>
-<style>
-  body {
-    background-color: #fdf5e6; /* 温暖的浅色背景 */
-    margin: 0;
-  }
-  canvas {
-    display: block;
-    margin: 0 auto;
-    background-color: #fdf5e6;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canvas Pig Drawing</title>
+  <style>
+    /* 居中显示 Canvas，背景白色 */
+    body { background: #ffffff; }
+    canvas { display: block; margin: 0 auto; }
+  </style>
 </head>
 <body>
-<canvas id="pigCanvas" width="400" height="400"></canvas>
-<script>
-  // 兼容处理：确保 requestAnimationFrame 可用
-  window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame
-                                 || window.mozRequestAnimationFrame || window.msRequestAnimationFrame
-                                 || function(cb){ return setTimeout(cb, 16); };
-  const canvas = document.getElementById('pigCanvas');
-  const ctx = canvas.getContext('2d');
-  // 绘制样式设置
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "#000";
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  // 各部位的坐标和尺寸参数
-  const centerX = 200, centerY = 220;
-  const headRadius = 80;
-  const leftEar = { base1:{x:130,y:170}, tip:{x:150,y:110}, base2:{x:180,y:150} };
-  const rightEar = { base1:{x:270,y:170}, tip:{x:250,y:110}, base2:{x:220,y:150} };
-  const eyeRadius = 5;
-  const leftEye = {x:170, y:200};
-  const rightEye= {x:230, y:200};
-  const snoutCenter={x:200,y:240};
-  const snoutRadiusX=30, snoutRadiusY=20;
-  const nostrilRadius=5;
-  const nostrilOffsetX=12, nostrilOffsetY=-5;
-  const leftNostril={x: snoutCenter.x - nostrilOffsetX, y: snoutCenter.y + nostrilOffsetY};
-  const rightNostril={x: snoutCenter.x + nostrilOffsetX, y: snoutCenter.y + nostrilOffsetY};
-  const mouthLeft={x:185,y:265}, mouthRight={x:215,y:265}, mouthCtrl={x:200,y:275};
-  // 动画状态控制
-  let phase = 0;
-  let step = 0;
-  // 各绘制阶段所需步数和延迟帧数
-  const headSteps=100;
-  const leftEarEdge1Steps=20, leftEarEdge2Steps=20;
-  const rightEarEdge1Steps=20, rightEarEdge2Steps=20;
-  const snoutSteps=60;
-  const headFillDelay=15, earFillDelay=10, snoutFillDelay=15;
-  function animate() {
-    switch(phase) {
-      case 0: // 绘制头部轮廓（圆形）逐渐
-        if(step < headSteps) {
-          const angle1 = (step / headSteps) * 2 * Math.PI;
-          const angle2 = ((step + 1) / headSteps) * 2 * Math.PI;
-          const x1 = centerX + headRadius * Math.cos(angle1);
-          const y1 = centerY + headRadius * Math.sin(angle1);
-          const x2 = centerX + headRadius * Math.cos(angle2);
-          const y2 = centerY + headRadius * Math.sin(angle2);
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else {
-          phase = 1; step = 0;
+  <canvas id="pigCanvas" width="400" height="400"></canvas>
+  <script>
+    (function() {
+      const canvas = document.getElementById('pigCanvas');
+      const ctx = canvas.getContext('2d');
+      // 设置绘图样式：棕色线条，线宽3，线端和线条交接采用圆角
+      ctx.strokeStyle = '#8B4513';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // 定义关键坐标和参数
+      const bodyCX = 170, bodyCY = 300, bodyRX = 60, bodyRY = 40;        // 身体椭圆中心及半径
+      const headCX = 260, headCY = 280, headR = 40;                      // 头部圆心及半径
+      const snoutCX = 310, snoutCY = 280, snoutR = 20;                   // 鼻子圆心及半径
+      const frontLegBaseFront = {x: 218, y: 340}, frontLegBaseBack = {x: 208, y: 340};  // 前腿前后基点
+      const hindLegBaseFront = {x: 129, y: 340}, hindLegBaseBack = {x: 119, y: 340};    // 后腿前后基点
+      const footY = 380;                                                // 脚底部 Y 坐标
+      const earNearBase1 = {x: 225, y: 260}, earNearBase2 = {x: 260, y: 240};           // 近耳朵基部两端
+      const earNearTip = {x: 220, y: 220};                                              // 近耳尖
+      const earNearCtrl1 = {x: 210, y: 250}, earNearCtrl2 = {x: 240, y: 210};           // 近耳曲线控制点
+      const earFarBase1 = {x: 295, y: 260}, earFarBase2 = {x: 280, y: 245};             // 远耳朵基部两端
+      const earFarTip = {x: 270, y: 230};                                               // 远耳尖
+      const earFarCtrl1 = {x: 300, y: 250}, earFarCtrl2 = {x: 270, y: 240};             // 远耳曲线控制点
+      const mouthStart = {x: 305, y: 298}, mouthEnd = {x: 270, y: 295};                 // 嘴巴曲线起点和终点
+      const mouthCtrl = {x: 288, y: 315};                                              // 嘴巴曲线控制点
+
+      // 二次贝塞尔曲线采样函数，用于生成平滑曲线上的点
+      function sampleQuadratic(p0, pc, p1, steps) {
+        const pts = [];
+        for (let t = 0; t <= 1; t += 1/steps) {
+          const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*pc.x + t*t*p1.x;
+          const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*pc.y + t*t*p1.y;
+          pts.push({x: x, y: y});
         }
-        break;
-      case 1: // 填充头部（粉色），稍停顿后进行
-        if(step < headFillDelay) {
-          step++;
-        } else {
-          ctx.save();
-          ctx.globalCompositeOperation = 'destination-over'; // 填充在已有线条后面
-          ctx.fillStyle = "#FFC0CB";
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, headRadius, 0, 2 * Math.PI);
-          ctx.fill();
-          ctx.restore();
-          phase = 2; step = 0;
+        return pts;
+      }
+
+      // 逐个生成各部分轮廓路径的点列
+      const angleStep = 0.0523;  // 绘制步进≈3度
+      const points_body_top = [];
+      // 身体顶部轮廓（跳过底部，从约160°画到约20°）
+      for (let a = 2.7925; a <= Math.PI*2; a += angleStep) {
+        const x = bodyCX + bodyRX * Math.cos(a);
+        const y = bodyCY + bodyRY * Math.sin(a);
+        points_body_top.push({x: x, y: y});
+      }
+      for (let a = 0; a <= 0.3491; a += angleStep) {
+        const x = bodyCX + bodyRX * Math.cos(a);
+        const y = bodyCY + bodyRY * Math.sin(a);
+        points_body_top.push({x: x, y: y});
+      }
+
+      const points_body_belly = [];
+      // 身体底部中间轮廓（腹部，可见部分）
+      for (let a = 1.0472; a <= 2.0944; a += angleStep) {
+        const x = bodyCX + bodyRX * Math.cos(a);
+        const y = bodyCY + bodyRY * Math.sin(a);
+        points_body_belly.push({x: x, y: y});
+      }
+
+      // 前腿轮廓点（不封闭顶部，与身体衔接处跳过）
+      const points_front_leg = [
+        {x: frontLegBaseFront.x, y: frontLegBaseFront.y + 5},
+        {x: frontLegBaseFront.x, y: footY},
+        {x: frontLegBaseBack.x, y: footY},
+        {x: frontLegBaseBack.x, y: frontLegBaseBack.y + 5}
+      ];
+      // 后腿轮廓点（不封闭顶部）
+      const points_hind_leg = [
+        {x: hindLegBaseFront.x, y: hindLegBaseFront.y + 5},
+        {x: hindLegBaseFront.x, y: footY},
+        {x: hindLegBaseBack.x, y: footY},
+        {x: hindLegBaseBack.x, y: hindLegBaseBack.y + 5}
+      ];
+
+      // 尾巴曲线路径（用两段二次贝塞尔连接成卷曲形状）
+      const tailBase = {x: 131, y: 269};
+      const tailOuter = {x: 100, y: 250};
+      const tailEnd = {x: 120, y: 285};
+      const tailCtrl1 = {x: 115, y: 275};
+      const tailCtrl2 = {x: 110, y: 300};
+      const tail_seg1 = sampleQuadratic(tailBase, tailCtrl1, tailOuter, 20);
+      const tail_seg2 = sampleQuadratic(tailOuter, tailCtrl2, tailEnd, 20);
+      tail_seg1.pop();  // 去除重复点
+      const points_tail = tail_seg1.concat(tail_seg2);
+
+      // 耳朵曲线路径（分为远耳和近耳）
+      const earFar_seg1 = sampleQuadratic(earFarBase1, earFarCtrl1, earFarTip, 20);
+      const earFar_seg2 = sampleQuadratic(earFarTip, earFarCtrl2, earFarBase2, 20);
+      earFar_seg1.pop();
+      const points_ear_far = earFar_seg1.concat(earFar_seg2);
+      const earNear_seg1 = sampleQuadratic(earNearBase1, earNearCtrl1, earNearTip, 20);
+      const earNear_seg2 = sampleQuadratic(earNearTip, earNearCtrl2, earNearBase2, 20);
+      earNear_seg1.pop();
+      const points_ear_near = earNear_seg1.concat(earNear_seg2);
+
+      // 头部轮廓（弧线，留出鼻子连接处缺口）
+      const points_head = [];
+      for (let a = 0.524; a <= 5.7596; a += angleStep) {  // 30°到330°
+        const x = headCX + headR * Math.cos(a);
+        const y = headCY + headR * Math.sin(a);
+        points_head.push({x: x, y: y});
+      }
+
+      // 鼻子轮廓（完整圆）
+      const points_snout = [];
+      for (let a = 0; a < Math.PI*2; a += 0.0698) {  // 步进≈4°
+        const x = snoutCX + snoutR * Math.cos(a);
+        const y = snoutCY + snoutR * Math.sin(a);
+        points_snout.push({x: x, y: y});
+      }
+
+      // 嘴巴曲线（微笑弧线）
+      const points_mouth = sampleQuadratic(mouthStart, mouthCtrl, mouthEnd, 20);
+
+      // 将各部分的点列按绘制顺序依次存入数组
+      const shapes = [
+        points_body_top,
+        points_body_belly,
+        points_hind_leg,
+        points_front_leg,
+        points_tail,
+        points_ear_far,
+        points_ear_near,
+        points_head,
+        points_snout,
+        points_mouth
+      ];
+
+      // 逐帧绘制各段路径
+      let shapeIndex = 0;
+      let segIndex = 1;
+      let lastPoint = shapes[0][0];
+      function drawNext() {
+        if (shapeIndex >= shapes.length) {
+          fillAndDetail();  // 轮廓绘制完成，开始填充和添加细节
+          return;
         }
-        break;
-      case 2: // 绘制左耳轮廓逐渐
-        if(step < leftEarEdge1Steps) {
-          // 耳朵外侧底部点(base1) -> 耳尖(tip)
-          const t1 = step / leftEarEdge1Steps;
-          const t2 = (step + 1) / leftEarEdge1Steps;
-          const x1 = leftEar.base1.x + (leftEar.tip.x - leftEar.base1.x) * t1;
-          const y1 = leftEar.base1.y + (leftEar.tip.y - leftEar.base1.y) * t1;
-          const x2 = leftEar.base1.x + (leftEar.tip.x - leftEar.base1.x) * t2;
-          const y2 = leftEar.base1.y + (leftEar.tip.y - leftEar.base1.y) * t2;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else if(step < leftEarEdge1Steps + leftEarEdge2Steps) {
-          // 耳尖(tip) -> 耳朵内侧底部点(base2)
-          const i = step - leftEarEdge1Steps;
-          const t1 = i / leftEarEdge2Steps;
-          const t2 = (i + 1) / leftEarEdge2Steps;
-          const x1 = leftEar.tip.x + (leftEar.base2.x - leftEar.tip.x) * t1;
-          const y1 = leftEar.tip.y + (leftEar.base2.y - leftEar.tip.y) * t1;
-          const x2 = leftEar.tip.x + (leftEar.base2.x - leftEar.tip.x) * t2;
-          const y2 = leftEar.tip.y + (leftEar.base2.y - leftEar.tip.y) * t2;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else {
-          phase = 3; step = 0;
-        }
-        break;
-      case 3: // 填充左耳
-        if(step < earFillDelay) {
-          step++;
-        } else {
-          ctx.fillStyle = "#FFC0CB";
-          ctx.beginPath();
-          ctx.moveTo(leftEar.base1.x, leftEar.base1.y);
-          ctx.lineTo(leftEar.tip.x, leftEar.tip.y);
-          ctx.lineTo(leftEar.base2.x, leftEar.base2.y);
-          ctx.closePath();
-          ctx.fill();
-          phase = 4; step = 0;
-        }
-        break;
-      case 4: // 绘制右耳轮廓逐渐
-        if(step < rightEarEdge1Steps) {
-          const t1 = step / rightEarEdge1Steps;
-          const t2 = (step + 1) / rightEarEdge1Steps;
-          const x1 = rightEar.base1.x + (rightEar.tip.x - rightEar.base1.x) * t1;
-          const y1 = rightEar.base1.y + (rightEar.tip.y - rightEar.base1.y) * t1;
-          const x2 = rightEar.base1.x + (rightEar.tip.x - rightEar.base1.x) * t2;
-          const y2 = rightEar.base1.y + (rightEar.tip.y - rightEar.base1.y) * t2;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else if(step < rightEarEdge1Steps + rightEarEdge2Steps) {
-          const j = step - rightEarEdge1Steps;
-          const t1 = j / rightEarEdge2Steps;
-          const t2 = (j + 1) / rightEarEdge2Steps;
-          const x1 = rightEar.tip.x + (rightEar.base2.x - rightEar.tip.x) * t1;
-          const y1 = rightEar.tip.y + (rightEar.base2.y - rightEar.tip.y) * t1;
-          const x2 = rightEar.tip.x + (rightEar.base2.x - rightEar.tip.x) * t2;
-          const y2 = rightEar.tip.y + (rightEar.base2.y - rightEar.tip.y) * t2;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else {
-          phase = 5; step = 0;
-        }
-        break;
-      case 5: // 填充右耳
-        if(step < earFillDelay) {
-          step++;
-        } else {
-          ctx.fillStyle = "#FFC0CB";
-          ctx.beginPath();
-          ctx.moveTo(rightEar.base1.x, rightEar.base1.y);
-          ctx.lineTo(rightEar.tip.x, rightEar.tip.y);
-          ctx.lineTo(rightEar.base2.x, rightEar.base2.y);
-          ctx.closePath();
-          ctx.fill();
-          phase = 6; step = 0;
-        }
-        break;
-      case 6: // 画左眼
+        const pts = shapes[shapeIndex];
+        const nextPoint = pts[segIndex];
+        // 绘制当前段线条
         ctx.beginPath();
-        ctx.arc(leftEye.x, leftEye.y, eyeRadius, 0, 2*Math.PI);
-        ctx.fillStyle = "#000";
-        ctx.fill();
-        phase = 7; step = 0;
-        break;
-      case 7: // 画右眼
-        ctx.beginPath();
-        ctx.arc(rightEye.x, rightEye.y, eyeRadius, 0, 2*Math.PI);
-        ctx.fillStyle = "#000";
-        ctx.fill();
-        phase = 8; step = 0;
-        break;
-      case 8: // 绘制鼻子轮廓（椭圆）逐渐
-        if(step < snoutSteps) {
-          const angle1 = (step / snoutSteps) * 2 * Math.PI;
-          const angle2 = ((step + 1) / snoutSteps) * 2 * Math.PI;
-          const x1 = snoutCenter.x + snoutRadiusX * Math.cos(angle1);
-          const y1 = snoutCenter.y + snoutRadiusY * Math.sin(angle1);
-          const x2 = snoutCenter.x + snoutRadiusX * Math.cos(angle2);
-          const y2 = snoutCenter.y + snoutRadiusY * Math.sin(angle2);
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          step++;
-        } else {
-          phase = 9; step = 0;
-        }
-        break;
-      case 9: // 填充鼻子并画鼻孔
-        if(step < snoutFillDelay) {
-          step++;
-        } else {
-          ctx.save();
-          ctx.globalCompositeOperation = 'destination-over'; // 填充在鼻子轮廓线后面
-          ctx.fillStyle = "#FF8C94";
-          ctx.beginPath();
-          ctx.ellipse(snoutCenter.x, snoutCenter.y, snoutRadiusX, snoutRadiusY, 0, 0, 2 * Math.PI);
-          ctx.fill();
-          ctx.restore();
-          // 鼻孔（两个小圆）
-          ctx.beginPath();
-          ctx.arc(leftNostril.x, leftNostril.y, nostrilRadius, 0, 2*Math.PI);
-          ctx.arc(rightNostril.x, rightNostril.y, nostrilRadius, 0, 2*Math.PI);
-          ctx.fillStyle = "#000";
-          ctx.fill();
-          phase = 10; step = 0;
-        }
-        break;
-      case 10: // 画嘴巴
-        ctx.beginPath();
-        ctx.moveTo(mouthLeft.x, mouthLeft.y);
-        ctx.quadraticCurveTo(mouthCtrl.x, mouthCtrl.y, mouthRight.x, mouthRight.y);
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(nextPoint.x, nextPoint.y);
         ctx.stroke();
-        // 完成，停止动画
-        return;
-    }
-    requestAnimationFrame(animate);
-  }
-  // 开始动画
-  requestAnimationFrame(animate);
-</script>
+        lastPoint = nextPoint;
+        segIndex++;
+        // 当前形状绘制完，切换到下一个形状
+        if (segIndex >= pts.length) {
+          shapeIndex++;
+          if (shapeIndex < shapes.length) {
+            segIndex = 1;
+            lastPoint = shapes[shapeIndex][0];
+          }
+        }
+        requestAnimationFrame(drawNext);
+      }
+      requestAnimationFrame(drawNext);
+
+      // 填充颜色并绘制眼睛、鼻孔等细节
+      function fillAndDetail() {
+        ctx.globalCompositeOperation = 'destination-over';  // 新绘制内容置于已有轮廓下方
+        const pink = '#FFC0CB';
+        const deepPink = '#FF1493';
+        // 深粉色填充鼻子
+        ctx.beginPath();
+        ctx.fillStyle = deepPink;
+        ctx.arc(snoutCX, snoutCY, snoutR, 0, Math.PI*2);
+        ctx.fill();
+        // 粉色填充头部
+        ctx.beginPath();
+        ctx.fillStyle = pink;
+        ctx.arc(headCX, headCY, headR, 0, Math.PI*2);
+        ctx.fill();
+        // 粉色填充近耳（靠前的耳朵）
+        ctx.beginPath();
+        ctx.moveTo(earNearBase1.x, earNearBase1.y);
+        ctx.quadraticCurveTo(earNearCtrl1.x, earNearCtrl1.y, earNearTip.x, earNearTip.y);
+        ctx.quadraticCurveTo(earNearCtrl2.x, earNearCtrl2.y, earNearBase2.x, earNearBase2.y);
+        ctx.closePath();
+        ctx.fill();
+        // 粉色填充远耳
+        ctx.beginPath();
+        ctx.moveTo(earFarBase1.x, earFarBase1.y);
+        ctx.quadraticCurveTo(earFarCtrl1.x, earFarCtrl1.y, earFarTip.x, earFarTip.y);
+        ctx.quadraticCurveTo(earFarCtrl2.x, earFarCtrl2.y, earFarBase2.x, earFarBase2.y);
+        ctx.closePath();
+        ctx.fill();
+        // 粉色填充前腿
+        ctx.beginPath();
+        ctx.moveTo(frontLegBaseFront.x, frontLegBaseFront.y);
+        ctx.lineTo(frontLegBaseFront.x, footY);
+        ctx.lineTo(frontLegBaseBack.x, footY);
+        ctx.lineTo(frontLegBaseBack.x, frontLegBaseBack.y);
+        ctx.closePath();
+        ctx.fill();
+        // 粉色填充后腿
+        ctx.beginPath();
+        ctx.moveTo(hindLegBaseFront.x, hindLegBaseFront.y);
+        ctx.lineTo(hindLegBaseFront.x, footY);
+        ctx.lineTo(hindLegBaseBack.x, footY);
+        ctx.lineTo(hindLegBaseBack.x, hindLegBaseBack.y);
+        ctx.closePath();
+        ctx.fill();
+        // 粉色填充身体
+        ctx.beginPath();
+        ctx.ellipse(bodyCX, bodyCY, bodyRX, bodyRY, 0, 0, Math.PI*2);
+        ctx.fill();
+        // 恢复正常绘图层次，将后续细节画在最上层
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'black';
+        // 画眼睛（黑色小圆）
+        ctx.beginPath();
+        ctx.arc(290, 260, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(275, 260, 4, 0, Math.PI*2);
+        ctx.fill();
+        // 画鼻孔（黑色小圆点）
+        ctx.beginPath();
+        ctx.arc(310, 274, 3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(310, 286, 3, 0, Math.PI*2);
+        ctx.fill();
+      }
+    })();
+  </script>
 </body>
 </html>
