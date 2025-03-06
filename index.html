@@ -26,7 +26,6 @@
             font-weight: bold;
             position: absolute;
             top: 65%; /* 文字位置 */
-            transition: opacity 1s ease-in-out;
         }
     </style>
 </head>
@@ -44,18 +43,20 @@
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
+        let frame = 0; // 记录动画帧数
         let earWiggle = 0; // 耳朵摆动动画
         let noseScale = 1; // 鼻子呼吸效果
         let eyeBlink = 1;  // 眼睛睁开状态（1=睁开，0=闭眼）
         let floatOffset = 0; // 上下浮动动画
-        let floatDirection = 1; // 控制浮动方向
-        let frame = 0; // 记录动画帧数
 
         function drawPig() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // **降低动画速度**
+            let slowFactor = 0.03; // 调整整体速度（值越小，动画越慢）
+
             // **计算整体漂浮动画（呼吸感）**
-            floatOffset = Math.sin(frame * 0.05) * 5; // 缓慢上下浮动
+            floatOffset = Math.sin(frame * slowFactor) * 4; // 缓慢上下浮动
 
             ctx.save();
             ctx.translate(0, floatOffset); // 让整个猪头上下浮动
@@ -68,7 +69,7 @@
             ctx.stroke();
 
             // **绘制耳朵（带晃动效果）**
-            let earOffset = Math.sin(earWiggle) * 3; // 轻微摆动
+            let earOffset = Math.sin(earWiggle * slowFactor) * 3; // 轻微摆动
             ctx.beginPath();
             ctx.moveTo(85, 90 + earOffset);
             ctx.quadraticCurveTo(50, 40, 90, 75 + earOffset);
@@ -86,7 +87,7 @@
 
             // **绘制鼻子（带呼吸效果）**
             ctx.beginPath();
-            let noseBreath = 1 + 0.05 * Math.sin(frame * 0.1); // 呼吸缩放
+            let noseBreath = 1 + 0.03 * Math.sin(frame * slowFactor * 2); // 更缓慢的呼吸
             ctx.ellipse(150, 170, 35 * noseBreath, 25 * noseBreath, 0, 0, Math.PI * 2);
             ctx.fillStyle = "#FF8C94"; // 深粉色
             ctx.fill();
@@ -104,7 +105,7 @@
             // **绘制眼睛（带眨眼效果）**
             ctx.fillStyle = "#000";
             ctx.beginPath();
-            if (eyeBlink > 0.2) {
+            if (eyeBlink > 0.3) {
                 ctx.arc(130, 130, 8, 0, Math.PI * 2); // 眼睛睁开
                 ctx.arc(170, 130, 8, 0, Math.PI * 2);
             } else {
@@ -116,8 +117,8 @@
             ctx.restore(); // 结束漂浮动画
 
             // **动画逻辑**
-            earWiggle += 0.1;  // 耳朵轻微晃动
-            eyeBlink = Math.abs(Math.sin(frame * 0.05)); // 眨眼
+            earWiggle += slowFactor * 15;  // 耳朵轻微晃动
+            eyeBlink = Math.abs(Math.sin(frame * slowFactor * 2)); // 眨眼
             frame++; // 更新帧数
 
             requestAnimationFrame(drawPig);
