@@ -7,11 +7,11 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             background-color: #fffaf0; /* 温暖的背景色 */
-            flex-direction: column;
         }
         canvas {
             background-color: white;
@@ -20,33 +20,38 @@
         }
         .text {
             font-family: "Arial", sans-serif;
-            font-size: 18px;
+            font-size: 20px;
             color: #8B4513; /* 深棕色 */
             font-weight: bold;
             margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
         }
     </style>
 </head>
 <body>
     <canvas id="pigCanvas" width="300" height="350"></canvas>
-    <div class="text">雪雪包天天开心</div>
+    <div id="text" class="text">雪雪包天天开心</div>
 
     <script>
         const canvas = document.getElementById("pigCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 手绘风格参数
+        // 颜色 & 线条设置
         ctx.lineWidth = 4;
-        ctx.strokeStyle = "#5a4033"; // 深棕色线条，柔和一点
+        ctx.strokeStyle = "#5a4033"; // 深棕色线条
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
-        let progress = 0;  // 记录动画进度
+        let progress = 0;  // 记录绘制进度
+        let earWiggle = 0; // 耳朵摆动动画
+        let noseScale = 1; // 鼻子呼吸效果
+        let eyeBlink = 1;  // 眼睛睁开状态（1=睁开，0=闭眼）
 
         function drawPig() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 绘制头部（圆形）
+            // **绘制头部**
             if (progress >= 0.1) {
                 ctx.beginPath();
                 ctx.arc(150, 150, 80, 0, Math.PI * 2);
@@ -55,30 +60,29 @@
                 ctx.stroke();
             }
 
-            // **绘制真实感更强的猪耳朵**
+            // **绘制耳朵（带晃动效果）**
             if (progress >= 0.2) {
-                // 左耳
+                let earOffset = Math.sin(earWiggle) * 3; // 轻微摆动
                 ctx.beginPath();
-                ctx.moveTo(85, 90);
-                ctx.quadraticCurveTo(50, 40, 90, 75);
+                ctx.moveTo(85, 90 + earOffset);
+                ctx.quadraticCurveTo(50, 40, 90, 75 + earOffset);
                 ctx.quadraticCurveTo(110, 60, 95, 95);
                 ctx.fillStyle = "#FFC0CB";
                 ctx.fill();
                 ctx.stroke();
 
-                // 右耳
                 ctx.beginPath();
-                ctx.moveTo(215, 90);
-                ctx.quadraticCurveTo(250, 40, 210, 75);
+                ctx.moveTo(215, 90 - earOffset);
+                ctx.quadraticCurveTo(250, 40, 210, 75 - earOffset);
                 ctx.quadraticCurveTo(190, 60, 205, 95);
                 ctx.fill();
                 ctx.stroke();
             }
 
-            // **绘制鼻子**
+            // **绘制鼻子（带呼吸效果）**
             if (progress >= 0.4) {
                 ctx.beginPath();
-                ctx.ellipse(150, 170, 35, 25, 0, 0, Math.PI * 2);
+                ctx.ellipse(150, 170, 35 * noseScale, 25 * noseScale, 0, 0, Math.PI * 2);
                 ctx.fillStyle = "#FF8C94"; // 深粉色
                 ctx.fill();
                 ctx.stroke();
@@ -95,25 +99,61 @@
                 ctx.fill();
             }
 
-            // 眼睛
+            // **绘制眼睛（带眨眼效果）**
             if (progress >= 0.6) {
                 ctx.fillStyle = "#000";
                 ctx.beginPath();
-                ctx.arc(130, 130, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(170, 130, 8, 0, Math.PI * 2);
+                if (eyeBlink > 0.2) {
+                    ctx.arc(130, 130, 8, 0, Math.PI * 2); // 眼睛睁开
+                    ctx.arc(170, 130, 8, 0, Math.PI * 2);
+                } else {
+                    ctx.fillRect(122, 127, 16, 4); // 眨眼
+                    ctx.fillRect(162, 127, 16, 4);
+                }
                 ctx.fill();
             }
 
-            // 递增动画进度
+            // **动画逻辑**
             progress += 0.02;
+            earWiggle += 0.1;  // 耳朵轻微晃动
+            noseScale = 1 + 0.05 * Math.sin(progress * 10); // 鼻子呼吸
+            eyeBlink = Math.abs(Math.sin(progress * 5)); // 眨眼
+
             if (progress <= 1) {
                 requestAnimationFrame(drawPig);
+            } else {
+                showText();
             }
         }
 
-        drawPig();
+        // **文字动画**
+        function showText() {
+            const textElem = document.getElementById("text");
+            let index = 0;
+            const text = "雪雪包天天开心";
+            textElem.textContent = "";
+            textElem.style.opacity = "1";
+            
+            function revealText() {
+                if (index < text.length) {
+                    textElem.textContent += text[index];
+                    index++;
+                    setTimeout(revealText, 200); // 逐字显示
+                }
+            }
+            revealText();
+        }
+
+        // **持续动画循环**
+        function animateLoop() {
+            drawPig();
+            setTimeout(() => {
+                progress = 1; // 结束绘制
+                setInterval(drawPig, 50); // 持续执行耳朵、鼻子、眨眼动画
+            }, 3000); // 动画绘制完成后
+        }
+
+        animateLoop();
     </script>
 </body>
 </html>
