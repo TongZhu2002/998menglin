@@ -47,6 +47,8 @@
         let earWiggle = 0; // 耳朵摆动动画
         let noseScale = 1; // 鼻子呼吸效果
         let eyeBlink = 1;  // 眼睛睁开状态（1=睁开，0=闭眼）
+        let textVisible = false; // 文字是否可见
+        let loopTimer = null; // 用于循环的定时器
 
         function drawPig() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -139,21 +141,35 @@
                     textElem.textContent += text[index];
                     index++;
                     setTimeout(revealText, 200); // 逐字显示
+                } else {
+                    setTimeout(() => {
+                        textElem.style.opacity = "0"; // 文字消失
+                        restartAnimation(); // 重新开始动画
+                    }, 2000);
                 }
             }
             revealText();
         }
 
-        // **持续动画循环**
-        function animateLoop() {
+        // **动画循环**
+        function restartAnimation() {
+            clearTimeout(loopTimer);
+            progress = 0;
+            earWiggle = 0;
+            noseScale = 1;
+            eyeBlink = 1;
+            document.getElementById("text").textContent = ""; // 清空文字
             drawPig();
-            setTimeout(() => {
-                progress = 1; // 结束绘制
-                setInterval(drawPig, 50); // 持续执行耳朵、鼻子、眨眼动画
-            }, 3000); // 动画绘制完成后
         }
 
-        animateLoop();
+        function startLoop() {
+            drawPig();
+            loopTimer = setInterval(() => {
+                restartAnimation();
+            }, 8000); // 8秒后重新开始
+        }
+
+        startLoop();
     </script>
 </body>
 </html>
